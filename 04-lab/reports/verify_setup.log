@@ -1,0 +1,5 @@
+[PASS] MCP connection
+[PASS] list_tools: 3 tools
+[PASS] health_check
+[PASS] get_current_weather
+[PASS] get_forecast

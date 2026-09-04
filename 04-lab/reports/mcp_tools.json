@@ -1,0 +1,50 @@
+[
+  {
+    "name": "get_current_weather",
+    "description": "Get current weather conditions for a city.",
+    "inputSchema": {
+      "properties": {
+        "city": {
+          "title": "City",
+          "type": "string"
+        }
+      },
+      "required": [
+        "city"
+      ],
+      "title": "get_current_weatherArguments",
+      "type": "object"
+    }
+  },
+  {
+    "name": "get_forecast",
+    "description": "Get a 1-to-3-day weather forecast for a city.",
+    "inputSchema": {
+      "properties": {
+        "city": {
+          "title": "City",
+          "type": "string"
+        },
+        "days": {
+          "default": 3,
+          "title": "Days",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "city"
+      ],
+      "title": "get_forecastArguments",
+      "type": "object"
+    }
+  },
+  {
+    "name": "health_check",
+    "description": "Confirm that the MCP server is running without calling WeatherAPI.",
+    "inputSchema": {
+      "properties": {},
+      "title": "health_checkArguments",
+      "type": "object"
+    }
+  }
+]

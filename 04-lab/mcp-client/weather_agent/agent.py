@@ -1,56 +1,46 @@
-"""
-Weather Agent - Connects to Remote MCP Server on Cloud Run
-Successfully connects to custom MCP HTTP endpoints!
-"""
-from google.adk import Agent
-from google.adk.tools.mcp_tool.mcp_toolset import McpToolset, StreamableHTTPConnectionParams
-import logging
+"""Google ADK agent backed by tools discovered from a remote MCP server."""
 
-# Set up logging
-logging.basicConfig(level=logging.INFO)
+from __future__ import annotations
+
+import logging
+import os
+from pathlib import Path
+
+from dotenv import load_dotenv
+from google.adk import Agent
+from google.adk.tools.mcp_tool.mcp_toolset import (
+    McpToolset,
+    StreamableHTTPConnectionParams,
+)
+
 logger = logging.getLogger(__name__)
 
-MCP_SERVER_URL = "http://localhost:8085/mcp"
+load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 
-logger.info(f"🌐 Initializing weather agent with remote MCP server")
-logger.info(f"📡 MCP Server: {MCP_SERVER_URL}")
+MCP_SERVER_URL = os.getenv("MCP_SERVER_URL", "http://localhost:8085/mcp")
 
-try:
-    # Create connection parameters for the remote MCP server
-    connection_params = StreamableHTTPConnectionParams(
-        url=MCP_SERVER_URL,
-        timeout=30.0,  # Increased timeout for Cloud Run cold starts
-    )
-    
-    # Create the MCP toolset - this will connect to the remote server
-    logger.info("🔌 Connecting to MCP server...")
-    weather_tools = McpToolset(
-        connection_params=connection_params,
-    )
-    logger.info("✅ MCP toolset created successfully")
-    
-    # Create the agent with remote MCP tools
-    root_agent = Agent(
-        name="weather_agent",
-        model="gemini-2.5-flash",
-        tools=[weather_tools],
-    )
-    logger.info("✅ Weather agent initialized with remote MCP tools:")
-    logger.info("   - get_current_weather(city)")
-    logger.info("   - get_forecast(city, days)")
-    logger.info("   - health_check()")
-    logger.info("🎉 Remote MCP connection successful!")
-    
-except Exception as e:
-    logger.error(f"❌ Failed to connect to remote MCP server: {e}")
-    logger.error(f"   Server URL: {MCP_SERVER_URL}")
-    import traceback
-    traceback.print_exc()
-    
-    # Create a fallback agent without tools
-    logger.warning("⚠️  Creating fallback agent without MCP tools")
-    root_agent = Agent(
-        name="weather_agent",
-        model="gemini-2.5-flash",
-    )
+connection_params = StreamableHTTPConnectionParams(
+    url=MCP_SERVER_URL,
+    timeout=30.0,
+)
 
+# McpToolset lets ADK initialize the MCP session and discover the server's
+# tools at runtime. The client intentionally does not duplicate tool schemas.
+weather_tools = McpToolset(connection_params=connection_params)
+
+root_agent = Agent(
+    name="weather_agent",
+    model=os.getenv("ADK_MODEL", "gemini-3.6-flash"),
+    instruction=(
+        "You are a weather assistant. For current weather questions, use the "
+        "discovered get_current_weather tool. For forecast questions, use the "
+        "discovered get_forecast tool with the requested city and number of days. "
+        "Use health_check only when checking MCP server availability. Never invent "
+        "live weather data. If the MCP server or WeatherAPI fails, clearly say that "
+        "live weather data could not be retrieved and explain the failure briefly. "
+        "For non-weather requests, answer normally without calling weather tools."
+    ),
+    tools=[weather_tools],
+)
+
+logger.info("Weather agent configured with MCP server URL: %s", MCP_SERVER_URL)

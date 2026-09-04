@@ -16,8 +16,9 @@ COPY weather.py ./
 # Expose port (Cloud Run will override this)
 EXPOSE 8080
 
-# Set environment variables
-ENV PYTHONUNBUFFERED=1
+# Set environment variables. Cloud Run may override PORT at runtime.
+ENV PYTHONUNBUFFERED=1 \
+    PORT=8080
 
 # Run the application
 CMD ["python", "weather.py"]

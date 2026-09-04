@@ -1,0 +1,2 @@
+[PASS] current weather: MCP tool call(s) ['get_current_weather']
+[PASS] forecast: MCP tool call(s) ['get_forecast']

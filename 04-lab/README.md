@@ -50,16 +50,22 @@ So với bài 02 (viết client thủ công bằng `mcp.ClientSession`), ADK gi�
 
 ## Setup
 
+Use the `py3.12` conda environment for both projects:
+
+```bash
+conda activate py3.12
+```
+
 ### 1. MCP Server
 
 ```bash
-cd mcp-server
-uv sync
+cd 04-lab/mcp-server
+uv sync --dev
 
-# Set your WeatherAPI key (get one free at https://weatherapi.com)
-export WEATHERAPI_KEY="your_weatherapi_key"
+# Create .env from .env.example and set WEATHERAPI_KEY
+cp .env.example .env
 
-# Start the server (runs on port 8085 by default)
+# Start the Streamable HTTP server (port 8085 by default)
 uv run python weather.py
 ```
 
@@ -68,11 +74,14 @@ The server will be available at `http://localhost:8085/mcp`.
 ### 2. ADK Agent (Client)
 
 ```bash
-cd mcp-client
-uv sync
+cd 04-lab/mcp-client
+uv sync --dev
 
-# Create .env file with your Gemini API key
-echo "GOOGLE_API_KEY=your_gemini_api_key" > .env
+# Create .env from .env.example and set GOOGLE_API_KEY
+cp .env.example .env
+
+# Verify the real MCP protocol (server must be running)
+uv run python verify_setup.py
 
 # Start ADK web interface
 uv run adk web
@@ -87,3 +96,26 @@ Open http://localhost:8000 in your browser, select `weather_agent`, and ask abou
 | `WEATHERAPI_KEY` | mcp-server | API key from weatherapi.com |
 | `GOOGLE_API_KEY` | mcp-client/.env | Gemini API key |
 | `PORT` | mcp-server (env) | Override server port (default: 8085) |
+
+## Tests
+
+Unit and MCP Streamable HTTP integration tests use fixtures and do not call external APIs:
+
+```bash
+cd 04-lab/mcp-server
+uv run pytest -q
+```
+
+Live current-weather and forecast checks in `verify_setup.py` run only when
+`WEATHERAPI_KEY` is configured; otherwise they are reported as `SKIP`.
+
+## Docker
+
+The container uses `PORT=8080` by default and exposes `8080`. Cloud Run can
+override `PORT`; local bare Python execution continues to default to `8085`.
+
+```bash
+cd 04-lab/mcp-server
+docker build -t weather-mcp .
+docker run --rm -p 8080:8080 -e WEATHERAPI_KEY=your_key weather-mcp
+```
